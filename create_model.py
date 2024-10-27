@@ -190,7 +190,7 @@ class Model:
             validation_data=data.validation_generator,
             validation_steps=data.validation_set_length // epochs // batch_size,
             verbose=2,
-            callbacks=[callbacks.Callback()]
+            callbacks=[callbacks.Callback(), callbacks.EarlyStopping(patience=50)]
         )
         return self.train_history
 
@@ -208,10 +208,10 @@ class Model:
         plt.ylabel('Val Loss')
         plt.xlabel('Epoch')
         plt.legend([f'fold {i}' for i in range(len(self.all_loss_history))], loc=0)
+        if save_file_name != '' and save_file_name.endswith('.png'):
+            plt.savefig(save_file_name, format="png")
         if show:
             plt.show()
-        if save_file_name != '' and save_file_name.endswith('.png'):
-            plt.imsave(save_file_name)
         plt.clf()
 
     def plot_training(self, metric, show=True, save_file_name=''):
@@ -229,13 +229,13 @@ class Model:
         plt.ylabel('Loss')
         plt.xlabel('Epoch')
         plt.legend(['Training', 'Validation'], loc=0)
+        if save_file_name != '' and save_file_name.endswith('.png'):
+            plt.savefig(save_file_name, format="png")
         if show:
             plt.show()
-        if save_file_name != '' and save_file_name.endswith('.png'):
-            plt.imsave(save_file_name)
         plt.clf()
 
-    def predict(self, img, heat_map=False, verbose=2):
+    def predict(self, file_path, heat_map=False, verbose=2):
         """
         Predict the label of an image using actual model
         :file_path: file path of the image to predict
@@ -245,17 +245,17 @@ class Model:
         from tensorflow.data.experimental import enable_debug_mode
         enable_debug_mode()
 
-        img_tensor = get_img_tensor(img)
+        img_tensor = get_img_tensor(file_path)
         prediction = self.model.predict(img_tensor, verbose=verbose)
         if heat_map:
-            self._show_heatmap(img, prediction)
+            self._show_heatmap(file_path, prediction)
         return prediction
 
-    def _show_heatmap(self, img, prediction):
+    def _show_heatmap(self, file_path, prediction):
         """
         Display the heatmap of the prediction of an image
         """
-        img_array = get_img_tensor(img)
+        img_array = get_img_tensor(file_path)
         last_conv_layer_name = self.model.layers[-5]
         heatmap = make_gradcam_heatmap(img_array, self.model, last_conv_layer_name)
         save_and_display_gradcam(file_path, heatmap)
@@ -284,8 +284,9 @@ class Model:
                 callbacks=[CustomCallback(epochs)]
             )
             self.all_loss_history.append(history.history['val_loss'])
-        average_loss_history = [np.mean([x[i] for x in self.all_loss_history]) for i in range(epochs)]
-        best_epochs = np.argmax(average_loss_history) + 1
+        min_epoch_number = min([len(x) for x in self.all_loss_history])
+        average_loss_history = [np.mean([x[i] for x in self.all_loss_history]) for i in range(min_epoch_number)]
+        best_epochs = np.argmin(average_loss_history) + 1
         return best_epochs
 
     def evaluate(self, data: Data, batch_size):
