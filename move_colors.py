@@ -27,10 +27,19 @@ for subdir in os.listdir(src_dir):
     random.shuffle(files)
     for i in range(1000):
         file = files.pop()
-        shutil.copy(os.path.join(src_dir, subdir, file), os.path.join(dest_dir, 'train', subdir, file))
+        shutil.copy(
+            os.path.join(src_dir, subdir, file),
+            os.path.join(dest_dir, 'train', subdir, file),
+        )
     for i in range(300):
         file = files.pop()
-        shutil.copy(os.path.join(src_dir, subdir, file), os.path.join(dest_dir, 'validation', subdir, file))
+        shutil.copy(
+            os.path.join(src_dir, subdir, file),
+            os.path.join(dest_dir, 'validation', subdir, file),
+        )
     for i in range(300):
         file = files.pop()
-        shutil.copy(os.path.join(src_dir, subdir, file), os.path.join(dest_dir, 'test', subdir, file))
+        shutil.copy(
+            os.path.join(src_dir, subdir, file),
+            os.path.join(dest_dir, 'test', subdir, file),
+        )

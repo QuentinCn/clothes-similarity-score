@@ -1,4 +1,3 @@
-import time
 from http import HTTPStatus
 import os
 import graphene
@@ -17,9 +16,10 @@ class QueryScoreAIReturn(graphene.ObjectType):
         status (int): the status code of the query response
         score (float): the score of similarity between the two images
     """
-    message = graphene.String(description="A message describing the result.")
-    score = graphene.Float(description="The score returned by the query.")
-    status = graphene.Int(description="The status code of the query response.")
+
+    message = graphene.String(description='A message describing the result.')
+    score = graphene.Float(description='The score returned by the query.')
+    status = graphene.Int(description='The status code of the query response.')
 
 
 class QueryMainObjectReturn(graphene.ObjectType):
@@ -32,8 +32,9 @@ class QueryMainObjectReturn(graphene.ObjectType):
         main_object (str): base64 image of the main object of the image
         type (str): type of object of the main object
     """
-    message = graphene.String(description="A message describing the result.")
-    status = graphene.Int(description="The status code of the query response.")
+
+    message = graphene.String(description='A message describing the result.')
+    status = graphene.Int(description='The status code of the query response.')
     main_object = graphene.String()
     type = graphene.String()
 
@@ -47,13 +48,10 @@ class QueryMainColorReturn(graphene.ObjectType):
         status (int): the status code of the query response
         color: ([int]): the rgb values of the main color of the image
     """
-    message = graphene.String(description="A message describing the result.")
-    status = graphene.Int(description="The status code of the query response.")
+
+    message = graphene.String(description='A message describing the result.')
+    status = graphene.Int(description='The status code of the query response.')
     color = graphene.List(graphene.Int)
-
-
-import graphene
-from http import HTTPStatus
 
 
 class QueryScoreAI(graphene.ObjectType):
@@ -70,7 +68,7 @@ class QueryScoreAI(graphene.ObjectType):
         QueryScoreAIReturn,
         base64_first_image=graphene.String(required=True),
         base64_second_image=graphene.String(required=True),
-        description="Computes the similarity score between two images."
+        description='Computes the similarity score between two images.',
     )
 
     def resolve_compute_likeliness(root, info, base64_first_image, base64_second_image):
@@ -81,18 +79,22 @@ class QueryScoreAI(graphene.ObjectType):
         :return the result containing a similarity score, a message, and a status code.
         """
         from handle_likeliness import get_similarity_score
-        score = get_similarity_score(models, get_main_object_image(base64_first_image)[0],
-                                     get_main_object_image(base64_second_image)[0])
+
+        score = get_similarity_score(
+            models,
+            get_main_object_image(base64_first_image)[0],
+            get_main_object_image(base64_second_image)[0],
+        )
         return QueryScoreAIReturn(
             message='Similarity score calculated successfully.',
             score=float(score),
-            status=HTTPStatus.OK
+            status=HTTPStatus.OK,
         )
 
     get_main_color = graphene.Field(
         QueryMainColorReturn,
         base64_image=graphene.String(required=True),
-        description="Gets the main color of the provided image."
+        description='Gets the main color of the provided image.',
     )
 
     def resolve_get_main_color(root, info, base64_image):
@@ -105,13 +107,13 @@ class QueryScoreAI(graphene.ObjectType):
         return QueryMainColorReturn(
             message='Successfully got main color.',
             color=[r, g, b],
-            status=HTTPStatus.OK
+            status=HTTPStatus.OK,
         )
 
     crop_main_object = graphene.Field(
         QueryMainObjectReturn,
         base64_image=graphene.String(required=True),
-        description="Crops and returns the main object in the provided image."
+        description='Crops and returns the main object in the provided image.',
     )
 
     def resolve_crop_main_object(root, info, base64_image):
@@ -125,25 +127,21 @@ class QueryScoreAI(graphene.ObjectType):
             message='Successfully cropped the main object.',
             main_object=main_object,
             type=type,
-            status=HTTPStatus.OK
+            status=HTTPStatus.OK,
         )
 
 
 service = authenticate_drive()
 folder_id = '1z_0ZIU9b4VxBl2KUg2LhBFKb8ci8yM3u'
-output_directory = './models'
+output_directory = os.path.join('models')
 download_files_recursively(service, folder_id, output_directory)
 print('Download completed !')
-models = [
-    Model(
-        path=os.path.join('models', 'clothes', f'4_classes_model.h5')
-    ),
-    Model(
-        path=os.path.join('models', 'shape', f'8_classes_model.h5')
-    ),
-    Model(
-        path=os.path.join('models', 'color', f'12_classes_model.h5')
-    )
-]
+models = []
+
+for sub in os.listdir(output_directory):
+    for file in os.listdir(os.path.join(output_directory, sub)):
+        if file.endswith('.h5'):
+            models.append(Model(path=os.path.join(output_directory, sub, file)))
+            print(f'Loaded {os.path.join(output_directory, sub, file)}')
 
 schema = graphene.Schema(query=QueryScoreAI)

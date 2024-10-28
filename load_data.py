@@ -1,4 +1,8 @@
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
 import os
+from tqdm import tqdm
+from tensorflow.keras.preprocessing import image
+import itertools
 import sys
 
 
@@ -12,14 +16,16 @@ class Data:
         :param batch_size: batch size of the generators
         :param safe: whether to run a little program before to make sure that all images can be formatted correctly
         """
-        import os
 
         self.dir_path = path
 
         if not os.path.isdir(self.dir_path):
             raise NotADirectoryError(f'{self.dir_path} is not a directory')
-        if not os.path.isdir(os.path.join(self.dir_path, 'train')) or not os.path.isdir(
-                os.path.join(self.dir_path, 'test')) or not os.path.isdir(os.path.join(self.dir_path, 'validation')):
+        if (
+            not os.path.isdir(os.path.join(self.dir_path, 'train'))
+            or not os.path.isdir(os.path.join(self.dir_path, 'test'))
+            or not os.path.isdir(os.path.join(self.dir_path, 'validation'))
+        ):
             raise Exception('Bad directory content')
 
         self._train_dir = os.path.join(self.dir_path, 'train')
@@ -37,23 +43,33 @@ class Data:
 
     def check_data_format(self):
         """Check whether the files contained by the directories will be usable"""
-        import os
-        from tqdm import tqdm
-        from tensorflow.keras.preprocessing import image
-        import itertools
+
         all_files_are_correct = True
         directories = [self._train_dir, self._test_dir, self._validation_dir]
         print(f'Checking {directories} for invalid files')
         for directory in directories:
             sub_dirs = os.listdir(directory)
-            pbar = tqdm(total=len(list(
-                itertools.chain.from_iterable([os.listdir(os.path.join(directory, sub_dir)) for sub_dir in sub_dirs]))),
-                        file=sys.stdout)
+            pbar = tqdm(
+                total=len(
+                    list(
+                        itertools.chain.from_iterable(
+                            [
+                                os.listdir(os.path.join(directory, sub_dir))
+                                for sub_dir in sub_dirs
+                            ]
+                        )
+                    )
+                ),
+                file=sys.stdout,
+            )
             for sub_dir in sub_dirs:
                 for filename in os.listdir(os.path.join(directory, sub_dir)):
                     file_path = os.path.join(directory, sub_dir, filename)
                     try:
-                        image.load_img(file_path, target_size=(self.input_shape[0], self.input_shape[1]))
+                        image.load_img(
+                            file_path,
+                            target_size=(self.input_shape[0], self.input_shape[1]),
+                        )
                     except Exception:
                         all_files_are_correct = False
                         print(f'Bad format for: {file_path}')
@@ -63,56 +79,38 @@ class Data:
 
     def _load_generator(self):
         """Initiate generator from the train, test and validation directories"""
-        from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
         train_datagen = ImageDataGenerator(
-            rescale=1. / 255,
+            rescale=1.0 / 255,
             rotation_range=20,
             shear_range=0.1,
             width_shift_range=0.1,
             height_shift_range=0.1,
             zoom_range=0.1,
             horizontal_flip=True,
-            fill_mode='nearest'
+            fill_mode='nearest',
         )
-        validation_datagen = ImageDataGenerator(rescale=1. / 255)
-        # validation_datagen = ImageDataGenerator(
-        #     rescale=1. / 255,
-        #     rotation_range=20,
-        #     shear_range=0.1,
-        #     width_shift_range=0.1,
-        #     height_shift_range=0.1,
-        #     zoom_range=0.1,
-        #     horizontal_flip=True,
-        #     fill_mode='nearest'
-        # )
-        test_datagen = ImageDataGenerator(rescale=1. / 255)
-        # test_datagen = ImageDataGenerator(
-        #     rescale=1. / 255,
-        #     rotation_range=20,
-        #     shear_range=0.1,
-        #     width_shift_range=0.1,
-        #     height_shift_range=0.1,
-        #     zoom_range=0.1,
-        #     horizontal_flip=True,
-        #     fill_mode='nearest'
-        # )
+        validation_datagen = ImageDataGenerator(rescale=1.0 / 255)
+        test_datagen = ImageDataGenerator(rescale=1.0 / 255)
 
         self.train_generator = train_datagen.flow_from_directory(
             self._train_dir,
             target_size=(self.input_shape[0], self.input_shape[1]),
             batch_size=self.batch_size,
-            class_mode='categorical')
+            class_mode='categorical',
+        )
         self.test_generator = test_datagen.flow_from_directory(
             self._test_dir,
             target_size=(self.input_shape[0], self.input_shape[1]),
             batch_size=self.batch_size,
-            class_mode='categorical')
+            class_mode='categorical',
+        )
         self.validation_generator = validation_datagen.flow_from_directory(
             self._validation_dir,
             target_size=(self.input_shape[0], self.input_shape[1]),
             batch_size=self.batch_size,
-            class_mode='categorical')
+            class_mode='categorical',
+        )
         self.train_set_length = self.train_generator.samples
         self.validation_set_length = self.validation_generator.samples
         self.test_set_length = self.test_generator.samples

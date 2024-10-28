@@ -1,15 +1,22 @@
+from tensorflow.keras.preprocessing import image
 import tensorflow as tf
-
-tf.config.run_functions_eagerly(True)
-
 import os.path
 from load_data import Data
 from create_model import Model
 import numpy as np
 
+tf.config.run_functions_eagerly(True)
 
-def test_model(train=False, evaluate=False, predict=False, model_name='', epoch_try=1000, safe_data_load=True,
-               show_activation=False) -> int:
+
+def test_model(
+    train=False,
+    evaluate=False,
+    predict=False,
+    model_name='',
+    epoch_try=1000,
+    safe_data_load=True,
+    show_activation=False,
+) -> int:
     """
     allow to use a model for training, prediction or evaluation
     :param train: whether to train or not, will use the data inside dataset/model_name folder
@@ -26,17 +33,25 @@ def test_model(train=False, evaluate=False, predict=False, model_name='', epoch_
         input_shape = (224, 224, 3)
         batch_size = 10
 
-        data = Data(os.path.join('dataset', model_name), input_shape=input_shape, batch_size=batch_size,
-                    safe=safe_data_load)
+        data = Data(
+            os.path.join('dataset', model_name),
+            input_shape=input_shape,
+            batch_size=batch_size,
+            safe=safe_data_load,
+        )
 
         if train:
             model = Model(
                 input_shape=data.train_generator.image_shape,
-                nb_classes=len(data.get_classes().keys())
+                nb_classes=len(data.get_classes().keys()),
             )
         else:
             model = Model(
-                path=os.path.join('models', model_name, f'{len(data.get_classes().keys())}_classes_model.h5')
+                path=os.path.join(
+                    'models',
+                    model_name,
+                    f'{len(data.get_classes().keys())}_classes_model.h5',
+                )
             )
 
         if show_activation:
@@ -55,21 +70,33 @@ def test_model(train=False, evaluate=False, predict=False, model_name='', epoch_
             if not os.path.exists(os.path.join('models', model_name)):
                 os.mkdir(os.path.join('models', model_name))
 
-            model.plot_folds(save_file_name=os.path.join('models', model_name, f'{k}_fold_val_loss_plot.png'))
+            model.plot_folds(
+                save_file_name=os.path.join(
+                    'models', model_name, f'{k}_fold_val_loss_plot.png'
+                )
+            )
             print(f'Best number of epochs: {best_epoch}')
             data.reload_generator()
 
-            print(f'Starting the training...')
-            model.train(
-                data=data,
-                epochs=best_epoch,
-                batch_size=batch_size
+            print('Starting the training...')
+            model.train(data=data, epochs=best_epoch, batch_size=batch_size)
+
+            model.save(
+                path=os.path.join(
+                    'models',
+                    model_name,
+                    f'{len(data.get_classes().keys())}_classes_model.h5',
+                )
             )
 
-            model.save(path=os.path.join('models', model_name, f'{len(data.get_classes().keys())}_classes_model.h5'))
-
-            model.plot_training('loss', save_file_name=os.path.join('models', model_name, f'loss_plot.png'))
-            model.plot_training('accuracy', save_file_name=os.path.join('models', model_name, f'accuracy_plot.png'))
+            model.plot_training(
+                'loss',
+                save_file_name=os.path.join('models', model_name, 'loss_plot.png'),
+            )
+            model.plot_training(
+                'accuracy',
+                save_file_name=os.path.join('models', model_name, 'accuracy_plot.png'),
+            )
 
             if evaluate:
                 data.reload_generator()
@@ -78,19 +105,23 @@ def test_model(train=False, evaluate=False, predict=False, model_name='', epoch_
             model.evaluate(data=data, batch_size=batch_size)
 
         if predict:
-            from tensorflow.keras.preprocessing import image
-
             tf.data.experimental.enable_debug_mode()
 
             test_image = os.listdir(os.path.join('dataset', 'tester'))
             for image_name in test_image:
                 file_path = os.path.join('dataset', 'tester', image_name)
-                pred = model.predict(image.load_img(file_path, target_size=(input_shape[0], input_shape[1])),
-                                     heat_map=True)
+                pred = model.predict(
+                    image.load_img(
+                        file_path, target_size=(input_shape[0], input_shape[1])
+                    ),
+                    heat_map=True,
+                )
                 index = np.where(pred[0] == max(pred[0]))
                 for key, i in data.get_classes().items():
                     if i == index[0][0]:
-                        print(f'{file_path} predicted as {key} with {pred[0][i]:.4f} precision')
+                        print(
+                            f'{file_path} predicted as {key} with {pred[0][i]: .4f} precision'
+                        )
                         break
         return 0
     except Exception as e:
@@ -99,7 +130,21 @@ def test_model(train=False, evaluate=False, predict=False, model_name='', epoch_
 
 
 if __name__ == '__main__':
-    test_model(train=False, evaluate=False, predict=True, model_name='clothes', epoch_try=500, safe_data_load=False,
-               show_activation=True)
-    test_model(train=False, evaluate=False, predict=False, model_name='shape', epoch_try=50, safe_data_load=False,
-               show_activation=True)
+    test_model(
+        train=False,
+        evaluate=False,
+        predict=True,
+        model_name='clothes',
+        epoch_try=500,
+        safe_data_load=False,
+        show_activation=True,
+    )
+    test_model(
+        train=False,
+        evaluate=False,
+        predict=False,
+        model_name='shape',
+        epoch_try=50,
+        safe_data_load=False,
+        show_activation=True,
+    )
