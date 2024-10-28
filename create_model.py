@@ -52,13 +52,20 @@ def get_img_tensor(img):
 def make_gradcam_heatmap(img_array, model, last_conv_layer, pred_index=None):
     # First, we create a model that maps the input image to the activations
     # of the last conv layer as well as the output predictions
-    grad_model = models.Model(
-        model.inputs, [last_conv_layer.output, model.output]
-    )
+    grad_model = models.Model(model.inputs, [last_conv_layer.output, model.output])
 
     # Then, we compute the gradient of the top predicted class for our input image
     # with respect to the activations of the last conv layer
-    from tensorflow import GradientTape, argmax, reduce_mean, squeeze, math, maximum, newaxis
+    from tensorflow import (
+        GradientTape,
+        argmax,
+        reduce_mean,
+        squeeze,
+        math,
+        maximum,
+        newaxis,
+    )
+
     with GradientTape() as tape:
         last_conv_layer_output, preds = grad_model(img_array)
         if pred_index is None:
@@ -85,29 +92,24 @@ def make_gradcam_heatmap(img_array, model, last_conv_layer, pred_index=None):
     return heatmap.numpy()
 
 
-def save_and_display_gradcam(img_path, heatmap, cam_path="cam.jpg", alpha=0.4):
-    # Load the original image
+def save_and_display_gradcam(img_path, heatmap, cam_path='cam.jpg', alpha=0.4):
     from tensorflow.keras.preprocessing import image
+
     img = image.load_img(img_path)
     img = image.img_to_array(img)
 
-    # Rescale heatmap to a range 0-255
     heatmap = np.uint8(255 * heatmap)
     import matplotlib as mpl
 
-    # Use jet colormap to colorize heatmap
-    jet = mpl.colormaps["jet"]
+    jet = mpl.colormaps['jet']
 
-    # Use RGB values of the colormap
     jet_colors = jet(np.arange(256))[:, :3]
     jet_heatmap = jet_colors[heatmap]
 
-    # Create an image with RGB colorized heatmap
     jet_heatmap = image.array_to_img(jet_heatmap)
     jet_heatmap = jet_heatmap.resize((img.shape[1], img.shape[0]))
     jet_heatmap = image.img_to_array(jet_heatmap)
 
-    # Superimpose the heatmap on original image
     superimposed_img = jet_heatmap * alpha + img
     superimposed_img = image.array_to_img(superimposed_img)
     fig, ax = plt.subplots()
@@ -155,20 +157,27 @@ class Model:
         from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense
         from tensorflow.keras import optimizers
 
-        self.model = models.Sequential([
-            Conv2D(32, kernel_size=(3, 3), activation='relu', input_shape=self.input_shape),
-            Conv2D(32, kernel_size=(3, 3), activation='relu'),
-            MaxPooling2D(pool_size=(2, 2), strides=2),
-            Conv2D(64, kernel_size=(3, 3), activation='relu'),
-            Conv2D(64, kernel_size=(3, 3), activation='relu'),
-            MaxPooling2D(pool_size=(2, 2), strides=2),
-            Conv2D(128, kernel_size=(3, 3), activation='relu'),
-            Conv2D(128, kernel_size=(3, 3), activation='relu'),
-            MaxPooling2D(pool_size=(2, 2), strides=2),
-            Flatten(),
-            Dense(512, activation='relu'),
-            Dense(nb_classes, activation='softmax')
-        ])
+        self.model = models.Sequential(
+            [
+                Conv2D(
+                    32,
+                    kernel_size=(3, 3),
+                    activation='relu',
+                    input_shape=self.input_shape,
+                ),
+                Conv2D(32, kernel_size=(3, 3), activation='relu'),
+                MaxPooling2D(pool_size=(2, 2), strides=2),
+                Conv2D(64, kernel_size=(3, 3), activation='relu'),
+                Conv2D(64, kernel_size=(3, 3), activation='relu'),
+                MaxPooling2D(pool_size=(2, 2), strides=2),
+                Conv2D(128, kernel_size=(3, 3), activation='relu'),
+                Conv2D(128, kernel_size=(3, 3), activation='relu'),
+                MaxPooling2D(pool_size=(2, 2), strides=2),
+                Flatten(),
+                Dense(512, activation='relu'),
+                Dense(nb_classes, activation='softmax'),
+            ]
+        )
         self.model.compile(
             optimizer=optimizers.Adam(learning_rate=0.001),
             loss='binary_crossentropy',
@@ -190,7 +199,7 @@ class Model:
             validation_data=data.validation_generator,
             validation_steps=data.validation_set_length // epochs // batch_size,
             verbose=2,
-            callbacks=[callbacks.Callback(), callbacks.EarlyStopping(patience=50)]
+            callbacks=[callbacks.Callback(), callbacks.EarlyStopping(patience=50)],
         )
         return self.train_history
 
@@ -209,7 +218,7 @@ class Model:
         plt.xlabel('Epoch')
         plt.legend([f'fold {i}' for i in range(len(self.all_loss_history))], loc=0)
         if save_file_name != '' and save_file_name.endswith('.png'):
-            plt.savefig(save_file_name, format="png")
+            plt.savefig(save_file_name, format='png')
         if show:
             plt.show()
         plt.clf()
@@ -230,7 +239,7 @@ class Model:
         plt.xlabel('Epoch')
         plt.legend(['Training', 'Validation'], loc=0)
         if save_file_name != '' and save_file_name.endswith('.png'):
-            plt.savefig(save_file_name, format="png")
+            plt.savefig(save_file_name, format='png')
         if show:
             plt.show()
         plt.clf()
@@ -243,6 +252,7 @@ class Model:
         :verbose: amount of information from the prediction to display (0: nothing, 1: everything, 2: important only)
         """
         from tensorflow.data.experimental import enable_debug_mode
+
         enable_debug_mode()
 
         img_tensor = get_img_tensor(file_path)
@@ -268,9 +278,18 @@ class Model:
         :param epochs: number of epochs to execute for each folds
         """
         self.all_loss_history = []
-        if min([length // epochs // k for length in [data.train_set_length, data.validation_set_length]]) <= 1:
+        if (
+            min(
+                [
+                    length // epochs // k
+                    for length in [data.train_set_length, data.validation_set_length]
+                ]
+            )
+            <= 1
+        ):
             print(
-                f'Too many epochs, max epoch for k = {k} -> {min([length // (k * 2) for length in [data.train_set_length, data.validation_set_length]])}')
+                f'Too many epochs, max epoch for k = {k} -> {min([length // (k * 2) for length in [data.train_set_length, data.validation_set_length]])}'
+            )
             return -1
         for i in range(k):
             print(f'Fold no. {i + 1} out of {k}')
@@ -281,11 +300,14 @@ class Model:
                 validation_data=data.validation_generator,
                 validation_steps=data.validation_set_length // epochs // k,
                 verbose=0,
-                callbacks=[CustomCallback(epochs)]
+                callbacks=[CustomCallback(epochs)],
             )
             self.all_loss_history.append(history.history['val_loss'])
         min_epoch_number = min([len(x) for x in self.all_loss_history])
-        average_loss_history = [np.mean([x[i] for x in self.all_loss_history]) for i in range(min_epoch_number)]
+        average_loss_history = [
+            np.mean([x[i] for x in self.all_loss_history])
+            for i in range(min_epoch_number)
+        ]
         best_epochs = np.argmin(average_loss_history) + 1
         return best_epochs
 
@@ -295,11 +317,19 @@ class Model:
         :param data: data used to evaluate
         :param batch_size: batch size of the data evaluated
         """
-        train_evaluation = self.model.evaluate(data.train_generator, steps=data.train_set_length // batch_size,
-                                               batch_size=batch_size)
-        test_evaluation = self.model.evaluate(data.test_generator, steps=data.test_set_length // batch_size,
-                                              batch_size=batch_size)
-        print(f'Train loss: {train_evaluation[0]}, train accuracy: {train_evaluation[1]}')
+        train_evaluation = self.model.evaluate(
+            data.train_generator,
+            steps=data.train_set_length // batch_size,
+            batch_size=batch_size,
+        )
+        test_evaluation = self.model.evaluate(
+            data.test_generator,
+            steps=data.test_set_length // batch_size,
+            batch_size=batch_size,
+        )
+        print(
+            f'Train loss: {train_evaluation[0]}, train accuracy: {train_evaluation[1]}'
+        )
         print(f'Test loss: {test_evaluation[0]}, test accuracy: {test_evaluation[1]}')
         return train_evaluation, test_evaluation
 
@@ -316,6 +346,7 @@ class Model:
                 activation_size *= output_shape
             table.append([layer.name, layer.output_shape, activation_size])
         from tabulate import tabulate
+
         print(tabulate(table, headers=['Name', 'Shape', 'Activation Size']))
 
     def save(self, path):

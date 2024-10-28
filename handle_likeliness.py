@@ -28,5 +28,9 @@ def get_similarity_score(models: [Model], image_one, image_two) -> float:
 
     similarities = []
     for model in models:
-        similarities.append(cosine_similarity(model.predict(image_one, verbose=0), model.predict(image_two, verbose=0))[0][0])
+        similarities.append(
+            cosine_similarity(
+                model.predict(image_one, verbose=0), model.predict(image_two, verbose=0)
+            )[0][0]
+        )
     return sum(similarities) / len(similarities)

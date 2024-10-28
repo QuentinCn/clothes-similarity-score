@@ -9,8 +9,8 @@ def base64_to_image(base64_string: str) -> bytes:
     :param base64_string: image as a base64 string
     :return: bytes representing the image
     """
-    if "data:image" in base64_string:
-        base64_string = base64_string.split(",")[1]
+    if 'data:image' in base64_string:
+        base64_string = base64_string.split(',')[1]
     image_bytes = base64.b64decode(base64_string)
     return image_bytes
 
@@ -22,9 +22,9 @@ def image_to_base64(image: Image) -> str:
     :return: base64 string of the image
     """
     buffered = BytesIO()
-    image.save(buffered, format="PNG")
+    image.save(buffered, format='PNG')
     img_bytes = buffered.getvalue()
-    img_base64 = base64.b64encode(img_bytes).decode("utf-8")
+    img_base64 = base64.b64encode(img_bytes).decode('utf-8')
     return img_base64
 
 

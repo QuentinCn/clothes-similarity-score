@@ -7,7 +7,7 @@ dir_path = 'color'
 if not os.path.exists(dir_path):
     os.mkdir(dir_path)
 
-im = Image.new("RGB", (224, 224))
+im = Image.new('RGB', (224, 224))
 
 red_path = 'red'
 green_path = 'green'

@@ -1,19 +1,27 @@
 import tensorflow as tf
-
-tf.config.run_functions_eagerly(True)
-
 import os.path
 from load_data import Data
 from create_model import Model
 from knockknock import discord_sender
 import numpy as np
 
+tf.config.run_functions_eagerly(True)
+
 webhook_url = 'https://discord.com/api/webhooks/1249032522969645116/j0HgZv0za49WZ-LlypJts--DRDszZcNaKJyJrbntnxz4wvppVXFHk7A49MLBAu7nndQg'
 
 
 @discord_sender(webhook_url=webhook_url)
-def main_model(train=False, evaluate=False, predict=False, specific_set='', epoch_try=1000, safe_data_load=True,
-               show_activation=False, fold=3, heat_map=True):
+def main_model(
+    train=False,
+    evaluate=False,
+    predict=False,
+    specific_set='',
+    epoch_try=1000,
+    safe_data_load=True,
+    show_activation=False,
+    fold=3,
+    heat_map=True,
+):
     """
     :param train: whether to train or not, will use the data inside dataset/specific_set folder
     :param evaluate: whether to evaluate or not, will use the data inside dataset/specific_set folder
@@ -28,17 +36,25 @@ def main_model(train=False, evaluate=False, predict=False, specific_set='', epoc
         input_shape = (224, 224, 3)
         batch_size = 30
 
-        data = Data(os.path.join('dataset', specific_set), input_shape=input_shape, batch_size=batch_size,
-                    safe=safe_data_load)
+        data = Data(
+            os.path.join('dataset', specific_set),
+            input_shape=input_shape,
+            batch_size=batch_size,
+            safe=safe_data_load,
+        )
 
         if train:
             model = Model(
                 input_shape=data.train_generator.image_shape,
-                nb_classes=len(data.get_classes().keys())
+                nb_classes=len(data.get_classes().keys()),
             )
         else:
             model = Model(
-                path=os.path.join('models', specific_set, f'{len(data.get_classes().keys())}_classes_model.h5')
+                path=os.path.join(
+                    'models',
+                    specific_set,
+                    f'{len(data.get_classes().keys())}_classes_model.h5',
+                )
             )
 
         if show_activation:
@@ -59,21 +75,35 @@ def main_model(train=False, evaluate=False, predict=False, specific_set='', epoc
             if not os.path.exists(os.path.join('models', specific_set)):
                 os.mkdir(os.path.join('models', specific_set))
 
-            model.plot_folds(save_file_name=os.path.join('models', specific_set, f'{fold}_fold_val_loss_plot.png'))
+            model.plot_folds(
+                save_file_name=os.path.join(
+                    'models', specific_set, f'{fold}_fold_val_loss_plot.png'
+                )
+            )
             print(f'Best number of epochs: {best_epoch}')
             data.reload_generator()
 
-            print(f'Starting the training...')
-            model.train(
-                data=data,
-                epochs=best_epoch,
-                batch_size=batch_size
+            print('Starting the training...')
+            model.train(data=data, epochs=best_epoch, batch_size=batch_size)
+
+            model.save(
+                path=os.path.join(
+                    'models',
+                    specific_set,
+                    f'{len(data.get_classes().keys())}_classes_model.h5',
+                )
             )
 
-            model.save(path=os.path.join('models', specific_set, f'{len(data.get_classes().keys())}_classes_model.h5'))
-
-            model.plot_training('loss', save_file_name=os.path.join('models', specific_set, f'loss_plot.png'))
-            model.plot_training('accuracy', save_file_name=os.path.join('models', specific_set, f'accuracy_plot.png'))
+            model.plot_training(
+                'loss',
+                save_file_name=os.path.join('models', specific_set, 'loss_plot.png'),
+            )
+            model.plot_training(
+                'accuracy',
+                save_file_name=os.path.join(
+                    'models', specific_set, 'accuracy_plot.png'
+                ),
+            )
 
             if evaluate:
                 data.reload_generator()
@@ -96,7 +126,9 @@ def main_model(train=False, evaluate=False, predict=False, specific_set='', epoc
                     if i == index[0][0]:
                         for key2, i in data.get_classes().items():
                             if i == index2[0][0]:
-                                print(f'{file_path} predicted as {key1} with {first_pred:.4f} precision then as {key2} with {second_pred:.4f}')
+                                print(
+                                    f'{file_path} predicted as {key1} with {first_pred: .4f} precision then as {key2} with {second_pred: .4f}'
+                                )
                                 break
         return 0
     except Exception as e:
@@ -105,7 +137,17 @@ def main_model(train=False, evaluate=False, predict=False, specific_set='', epoc
 
 
 if __name__ == '__main__':
-    main_model(train=True, evaluate=True, predict=True, specific_set='clothes', epoch_try=100, safe_data_load=False, show_activation=True, fold=3, heat_map=True)
+    main_model(
+        train=True,
+        evaluate=True,
+        predict=True,
+        specific_set='clothes',
+        epoch_try=100,
+        safe_data_load=False,
+        show_activation=True,
+        fold=3,
+        heat_map=True,
+    )
     # main_model(train=False, evaluate=False, predict=False, specific_set='shape', epoch_try=50, safe_data_load=False, show_activation=True)
     # main_model(train=True, evaluate=True, predict=False, specific_set='symboles', epoch_try=1000, safe_data_load=False, show_activation=True, fold=True)
     # main_model(train=False, evaluate=True, predict=True, specific_set='color', epoch_try=750, safe_data_load=False, show_activation=False, fold=2, heat_map=False)

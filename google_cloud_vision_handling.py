@@ -13,10 +13,12 @@ def compute_rectangle_area(points) -> int:
     """
     if not points[0] or not points[1] or not points[2] or not not points[3]:
         return -1
-    return (points[0].x * points[1].y - points[1].x * points[0].y) + (
-            points[1].x * points[2].y - points[2].x * points[1].y) + (
-            points[2].x * points[3].y - points[3].x * points[2].y) + (
-            points[3].x * points[0].y - points[0].x * points[3].y)
+    return (
+        (points[0].x * points[1].y - points[1].x * points[0].y)
+        + (points[1].x * points[2].y - points[2].x * points[1].y)
+        + (points[2].x * points[3].y - points[3].x * points[2].y)
+        + (points[3].x * points[0].y - points[0].x * points[3].y)
+    )
 
 
 def clear_objects(objects: list) -> list:
@@ -35,7 +37,9 @@ def clear_objects(objects: list) -> list:
     return new_objects
 
 
-def crop_image(vision_image: image_annotator, normalized_vertices: [{str: int}]) -> Image:
+def crop_image(
+    vision_image: image_annotator, normalized_vertices: [{str: int}]
+) -> Image:
     """
     Function that crop the image around the object
     :param vision_image: annotation created by google vision on the image
@@ -70,9 +74,15 @@ def crop_image_around_largest_object(image: Image) -> Image:
         return vision_image
 
     objects = clear_objects(objects)
-    largest_object = max(objects, key=lambda obj: compute_rectangle_area(obj.bounding_poly.normalized_vertices))
+    largest_object = max(
+        objects,
+        key=lambda obj: compute_rectangle_area(obj.bounding_poly.normalized_vertices),
+    )
 
-    return crop_image(vision_image, largest_object.bounding_poly.normalized_vertices), largest_object.name
+    return (
+        crop_image(vision_image, largest_object.bounding_poly.normalized_vertices),
+        largest_object.name,
+    )
 
 
 def get_main_object_image(base64_image: str) -> (str, str):
@@ -104,5 +114,7 @@ def get_image_main_color(base64_image: str) -> (int, int, int):
 
     response = client.image_properties(image=image)
     props = response.image_properties_annotation
-    color = max(props.dominant_colors.colors, key=lambda color: color.pixel_fraction).color
+    color = max(
+        props.dominant_colors.colors, key=lambda color: color.pixel_fraction
+    ).color
     return color.red, color.green, color.blue

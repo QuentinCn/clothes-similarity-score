@@ -41,7 +41,11 @@ def authenticate_drive():
 def list_files_and_folders_in_folder(service, folder_id):
     """List all files and folders in a specific Google Drive folder."""
     query = f"'{folder_id}' in parents"
-    results = service.files().list(q=query, pageSize=1000, fields="files(id, name, mimeType)").execute()
+    results = (
+        service.files()
+        .list(q=query, pageSize=1000, fields='files(id, name, mimeType)')
+        .execute()
+    )
     items = results.get('files', [])
 
     if not items:
@@ -61,9 +65,9 @@ def download_file(service, file_id, file_name, output_dir):
     done = False
     while not done:
         status, done = downloader.next_chunk()
-        print(f"Downloading {file_name}: {int(status.progress() * 100)}% complete.")
+        print(f'Downloading {file_name}: {int(status.progress() * 100)}% complete.')
 
-    print(f"File {file_name} downloaded to {file_path}.")
+    print(f'File {file_name} downloaded to {file_path}.')
 
 
 def download_files_recursively(service, folder_id, output_dir):
@@ -82,10 +86,10 @@ def download_files_recursively(service, folder_id, output_dir):
 
         if mime_type == 'application/vnd.google-apps.folder':
             # If the item is a folder, recursively download its contents
-            print(f"Entering folder: {file_name}")
+            print(f'Entering folder: {file_name}')
             new_output_dir = os.path.join(output_dir, file_name)
             download_files_recursively(service, file_id, new_output_dir)
         elif file_name.endswith('.h5'):
             # If the item is a file, download it
-            print(f"Downloading file: {file_name}")
+            print(f'Downloading file: {file_name}')
             download_file(service, file_id, file_name, output_dir)
